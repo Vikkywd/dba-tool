@@ -1,49 +1,50 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-
-const url = 'https://www.freejobalert.com/engineering-jobs/';
-
-if (!url) {
-  console.error('❌ Please provide a URL:');
-  console.error('Example: node jobScraper.js https://example.com/jobs');
-  process.exit(1);
-}
+const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 (async () => {
-  try {
-    console.log(`🔍 Scraping job data from: ${url}`);
-    const { data: html } = await axios.get(url);
-    const $ = cheerio.load(html);
+  const browser = await puppeteer.launch({
+    headless: true, 
+    defaultViewport: null,
+  });
 
-    const jobs = [];
+  const page = await browser.newPage();
 
-    // ✨ Change these selectors based on the site's structure
-    $('.job-listing, .job, .job-card').each((_, el) => {
-      const jobTitle = $(el).find('.title, .job-title, h2').text().trim();
-      const company = $(el).find('.company, .job-company').text().trim();
-      const location = $(el).find('.location, .job-location').text().trim();
-      const date = $(el).find('.date, .posted-date').text().trim();
-      const link = $(el).find('a').attr('href');
+  // Intercept all network requests
+  await page.setRequestInterception(true);
+  page.on('request', (request) => {
+    request.continue(); // let all requests through
+  });
 
-      if (jobTitle) {
-        jobs.push({
-          jobTitle,
-          company,
-          location,
-          date,
-          link: link?.startsWith('http') ? link : `${url}${link}`
-        });
+  page.on('response', async (response) => {
+    try {
+      const request = response.request();
+      const url = request.url();
+
+      if (request.resourceType() === 'xhr' || request.resourceType() === 'fetch') {
+        console.log(`📦 API called: ${url}`);
+
+        const responseHeaders = response.headers();
+        const contentType = responseHeaders['content-type'] || '';
+
+        if (contentType.includes('application/json')) {
+          const json = await response.json();
+          console.log('json: ', json);
+          console.log('✅ Response JSON:', JSON.stringify(json, null, 2));
+
+          // Save to a file (optional)
+          fs.writeFileSync('api_response.json', JSON.stringify(json, null, 2));
+        }
       }
-    });
-
-    if (jobs.length === 0) {
-      console.log('❌ No jobs found. Try updating the selectors based on website structure.');
-    } else {
-      console.log(`✅ Found ${jobs.length} job(s):`);
-      console.log(jobs.slice(0, 10)); // preview
+    } catch (err) {
+      console.error('❌ Error parsing response:', err.message);
     }
+  });
 
-  } catch (error) {
-    console.error('❌ Error fetching or parsing:', error.message);
-  }
+  const targetUrl = 'https://developer.adzuna.com/jobs';
+  await page.goto(targetUrl, { waitUntil: 'networkidle2' });
+
+  // Wait for page to finish rendering (optional)
+  // await new Promise(resolve => setTimeout(resolve, 5000));
+
+  await browser.close();
 })();
