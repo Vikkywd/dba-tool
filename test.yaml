@@ -1,0 +1,9 @@
+config:
+  target: 'http://10.99.35.36:5000'  # Your API URL
+  phases:
+    - duration: 30        # Run for 30 seconds
+      arrivalRate: 1000     # Start 10 users per second
+scenarios:
+  - flow:
+      - get:
+          url: '/users/get-listing'  # API endpoint to test

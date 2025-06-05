@@ -6,7 +6,7 @@ if (!process.env.LOCAL_URI) {
   throw new Error("Missing STAGE_URI in environment variables.");
 }
 
-const client = new MongoClient(process.env.LOCAL_URI, {
+const client = new MongoClient(process.env.STAGE_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

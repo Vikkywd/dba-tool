@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { parse } = require('csv-parse');
+const moment = require('moment')
 
 // Function to parse CSV from a file and convert to JSON
 function processCsvToJson(filePath) {
@@ -27,7 +28,7 @@ function processCsvToJson(filePath) {
               try {
                 return JSON.parse(value.replace(/& K2 &/, '')); // Clean up malformed JSON
               } catch (e) {
-                console.warn(`Failed to parse JSON in row ${context.row}: ${value}`);
+                console.warn(`Failed to parse JSON in row ${context.row}: ${value}`); 
                 return value;
               }
             }
@@ -48,23 +49,23 @@ function processCsvToJson(filePath) {
       while ((record = parser.read()) !== null) {
         // Structure the object as per need
         const product = {
+         
             VendorProductId : record['product-id'],
-            name : record["display-name"],
-            brand : record['brandcustom'],
-            // categoryId : record['']
-            description : record["long-description"],
+            Name : record["display-name"],
+            BrandId : record['brandcustom'],
+            Description : record["long-description"],
             MediaUrls : [
                     record["product-image"],record["product-alt-image"],
                     record["product-alt-swatch"],
                     record["videoLink"],
                     record["videoImage"]
                 ],
-            price : record["MSRP"],
-            barcodeId : Number(record["upc"]),
-            sku : record["JDASKUNumber"],
-            IsRetail : record["salonhqavailable"],
+            Price : record["MSRP"],
+            BarcodeId : JSON.stringify(Number(record["upc"])),
+            SKUUnit : record["JDASKUNumber"],
+            IsRetail : record["salonhq-available"] || null,
             IsDropship : true,
-            IsActive : record["salonhqavailable"],
+            IsActive : record["salonhq-available"] || null,
             MinOrderQuantity : 0,
             MaxOrderQuantity : record["quantityLimit"] || 0,
             MaxAllowedDiscount : 0,
@@ -73,12 +74,46 @@ function processCsvToJson(filePath) {
             SizeUnit : null,
             AdditionalDetails : [
                 {
-                  DetailTitle : record["directions"],
-                  DetailDescription : record["directions"],
-                  DetailTitle : record["featuresAndBenefits"],
+                  DetailTitle : "Directions",
+                  DetailDescription : record["directions"]
+                },
+                {
+                  DetailTitle : "FeaturesAndBenefits",
                   DetailDescription : record["featuresAndBenefits"],
+                },
+                {
+                  DetailTitle : "Ingredients",
+                  DetailDescription : record["ingredients"],
                 }
-            ]
+            ],
+            VendorId: null,
+            ProductTypeID: null,
+            PartneredVendorId: null,
+            Taxation: 0,
+            PointGiven: null,
+            IsOnlineProduct: 0,
+            RestrictedRegions: [],
+            Variants: [],
+            DiscardDays: null,
+            WarningDays: null,
+            DiscardDate: null,
+            WarningDate: null,
+            LotId: null,
+            SerialNumber: null,
+            ExpiryDate: null,
+            URLSource: null,
+            Length: null,
+            Width: null,
+            Weight: null,
+            Height: null,
+            IsAIProduct: 0,
+            IsApproved: 0,
+            ProductTypeId: null,
+            CategoryId : null,
+            CreatedDate:moment().toISOString(),
+            CreatedBy: 1309073763,
+            ModifiedDate: moment().toISOString(),
+            ModifiedBy: 1309073763,
         }
         product.MediaUrls = product.MediaUrls.filter((ele) => ele);
         results.push(product);
@@ -91,7 +126,7 @@ function processCsvToJson(filePath) {
     // When parsing is complete
     parser.on('end', () => {
       // Write to JSON file
-      fs.writeFile('products.json', JSON.stringify(results, null, 2), (err) => {
+      fs.writeFile('products2.json', JSON.stringify(results, null, 2), (err) => {
         if (err) {
           reject(err);
           return;
@@ -103,7 +138,7 @@ function processCsvToJson(filePath) {
 }
 
 // Execute the function with the path to your CSV file
-const csvFilePath = 'ji.csv'; // Replace with your CSV file path
+const csvFilePath = 'uii.csv'; // Replace with your CSV file path
 processCsvToJson(csvFilePath)
   .then((data) => console.log('JSON file created successfully:', data))
   .catch((err) => console.error('Error processing CSV:', err));
